@@ -5,6 +5,7 @@ use strict;
 use warnings;
 
 use Redis::JobQueue;
+use JSON;
 
 my $connection_string = '127.0.0.1:6379';
 my $jq = Redis::JobQueue->new( redis => $connection_string );
@@ -28,5 +29,7 @@ sub xxx {
     my $job = shift;
 
     my $workload = ${ $job->workload };
-    $job->result( 'XXX JOB result comes here' );
+
+
+    $job->result( 'XXX JOB result comes here...\n' );
 }
