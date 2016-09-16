@@ -28,9 +28,9 @@ sub new {
 sub startProc {
     my ($self) = @_;
 
-    # $self->{ 'thread' } = threads->create(\$self->threadProc);
     $self->{ 'thread' } = threads->create(sub{ $self->threadProc; });
-    # $self->{ 'thread' }->detach;
+
+    return;
 }
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -38,11 +38,20 @@ sub startProc {
 sub threadProc {
     my ($self) = @_;
 
+    # print Dumper($self);
+
     while (1) {
         print "thread: " . $self->{ 'monitor_name' } . "\n";
         sleep $self->{ 'repeat_period' };
     }
+
+    return;
 }
+
+
+
+
+
 
 1;
 
