@@ -34,6 +34,7 @@ sub new {
         'monitor_name'  => $self->{ 'monitor_name' },
         'repeat_period' => $self->{ 'db_config' }->{ 'repeat_period' },
         'logger'        => $self->{ 'logger' },
+        'job_queue'     => $self->{ 'job_queue' },
     });
 
     return $self;
