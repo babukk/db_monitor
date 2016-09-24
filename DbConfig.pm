@@ -21,7 +21,7 @@ $config = {
             'db_name' => 'dbi:Oracle:TUDVL',
             'schema' => 'gs3ctk_all',
             'password' => 'devel',
-            'repeat_period' => 3,
+            'repeat_period' => 10,
             'jobs' => [
                 {
                     'job' => 1111111,
@@ -38,14 +38,14 @@ $config = {
             'db_name' => 'dbi:Oracle:TUDVL',
             'schema' => 'gs_api',
             'password' => 'devel',
-            'repeat_period' => 3,
+            'repeat_period' => 10,
         },
 
         'TU_START_CTK@TUDVL' => {
             'db_name' => 'dbi:Oracle:TUDVL',
             'schema' => 'tu_start$_ctk',
             'password' => 'devel',
-            'repeat_period' => 3,
+            'repeat_period' => 10,
             'jobs' => [
                 {
                     'job' => 1111111,
@@ -76,6 +76,12 @@ $config = {
 4.       Множество активных сессий с длительным ожиданием выполнения (WAITED условно больше 10)
 5.       Множество активных сессий с блокирующей сессией (более 5 сессий блокируются какой-то одной сессией)
 6.       Недоступность dblink АСР Старт филиала из схемы tu_start$_ctk
+
+
+select  jr.SID, jr.FAILURES, jr.LAST_DATE, jl.date_beg, jr.JOB, jl.name_proc,  jj.what  from  dba_jobs_running  jr  join user_jobs jj  on  jj.JOB = jr.JOB
+join  lks_job_log  jl  on  jj.what  like  '%' || jl.name_proc || '%'
+and  jl.date_end is null
+
 
 =cut
 

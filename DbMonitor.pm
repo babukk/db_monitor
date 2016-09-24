@@ -5,7 +5,7 @@ use warnings;
 
 use DBI;
 use DbProc;
-use Data::Dumper;
+# use Data::Dumper;
 
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -54,7 +54,6 @@ sub dbConnect {
 sub startMonitor{
     my ($self) = @_;
 
-    $self->dbConnect;
     $self->{ 'db_proc' }->startProc;
 
     return;

@@ -8,14 +8,14 @@ use DbMonitor;
 use DbConfig;
 use Data::Dumper;
 
-my @monitor = ();
+my @monitor_pull = ();
 my $conf = $DbConfig::config;
 
 # print  Dumper($conf);
 
 foreach my $conf_key (keys %{$conf->{ 'databases' }}) {
 
-    print $conf_key, "\n";
+    print "starting monitor for ", $conf_key, "\n";
 
     my $monitor_instance = DbMonitor->new({
         'config'        => $conf,
@@ -25,12 +25,11 @@ foreach my $conf_key (keys %{$conf->{ 'databases' }}) {
     });
 
     $monitor_instance->startMonitor;
-    push(@monitor, $monitor_instance);
+    push(@monitor_pull, $monitor_instance);
 }
 
 # print Dumper(@monitor);
 
 while (1) {
-
     sleep 1;
 }
