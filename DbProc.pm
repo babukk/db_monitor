@@ -5,7 +5,7 @@ use warnings;
 
 use threads;
 use DBI;
-use Redis::JobQueue;
+# use Redis::JobQueue;
 use RedisDB;
 use JSON qw( encode_json );
 use Data::Dumper;
@@ -64,8 +64,14 @@ sub threadProc {
 sub dbConnect {
     my ($self) = @_;
 
-    $self->{ 'dbh' } = DBI->connect($self->{ 'db_config' }->{ 'db_name' }, $self->{ 'db_config' }->{ 'schema' },
-                                    $self->{ 'db_config' }->{ 'password' });
+    eval {
+        $self->{ 'dbh' } = DBI->connect($self->{ 'db_config' }->{ 'db_name' }, $self->{ 'db_config' }->{ 'schema' },
+                                        $self->{ 'db_config' }->{ 'password' });
+    };
+    if ($@) {
+        $self->{ 'logger' }->info($self->{ 'monitor_name' } . 'DbProc.pm. SQL error: ' . $@)  if $self->{ 'logger' };
+    }
+
     return;
 }
 
@@ -169,10 +175,21 @@ sub addIssueToQueue {
         $job_queue->set($param->{ 'key' }, $data);
         $job_queue->expire($param->{ 'key' }, 10);
         undef $job_queue;
+
+        # $self->{ 'job_queue' }->set($param->{ 'key' }, $data);
+        # $self->{ 'job_queue' }->expire($param->{ 'key' }, 10);
     };
     if ($@) {
         $self->{ 'logger' }->error('DbProc.pm: Redis: ' . $@);
+        #if ($@ =~ m/Connection refused/ ||
+        #    $@ =~ m/you have replies to fetch/) {
+        #    undef $self->{ 'job_queue' };
+        #    $self->{ 'job_queue' } = RedisDB->new(host => 'localhost', port => 6379);
+        #}
     }
+
+    undef $data;
+    undef $params;
 
     return;
 }

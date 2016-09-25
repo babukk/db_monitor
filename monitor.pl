@@ -6,23 +6,14 @@ use warnings;
 
 use RedisDB;
 
-use DbMonitor;
 use DbConfig;
+use DbMonitor;
+use DbMailer;
+
 use Data::Dumper;
 
 my @monitor_pull = ();
 my $conf = $DbConfig::config;
-
-=cut
-my $job_queue;
-eval {
-    $job_queue = RedisDB->new(host => 'localhost', port => 6379);
-};
-if ($@) {
-    print STDERR "Redis: " . $@, "\n";
-    exit(1);
-}
-=cut
 
 # print  Dumper($conf);
 
@@ -41,6 +32,15 @@ foreach my $conf_key (keys %{$conf->{ 'databases' }}) {
     $monitor_instance->startMonitor;
     push(@monitor_pull, $monitor_instance);
 }
+
+my $mailer_proc = DbMailer->new({
+        'config'               => $conf,
+        'mailer_repeat_period' => $conf->{ 'mailer_repeat_period' },
+        'log_conf_file'        => 'etc/log4perl.conf',
+        'job_queue'            => { host => 'localhost', port => 6379, },
+});
+
+$mailer_proc->startProc;
 
 # print Dumper(@monitor);
 

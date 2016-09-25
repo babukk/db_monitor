@@ -22,7 +22,7 @@ sub new {
 
     if ($self->{ 'log_conf_file' }) {
         use Log::Log4perl;
-        # use Data::Dumper;
+        use Data::Dumper;
 
         $self->{ 'logger' } = Log::Log4perl->get_logger();
         Log::Log4perl::init($self->{ 'log_conf_file' });
@@ -38,16 +38,6 @@ sub new {
     });
 
     return $self;
-}
-
-# ----------------------------------------------------------------------------------------------------------------------
-
-sub dbConnect {
-    my ($self) = @_;
-
-    $self->{ 'dbh' } = DBI->connect($self->{ 'db_config' }->{ 'db_name' }, $self->{ 'db_config' }->{ 'schema' },
-                                    $self->{ 'db_config' }->{ 'password' });
-    return;
 }
 
 # ----------------------------------------------------------------------------------------------------------------------
