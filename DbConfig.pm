@@ -15,6 +15,7 @@ $config = {
     'max_waited_sessions' => 10,
     'max_blocking_sessions' => 5,
     'mailer_repeat_period' => 15,
+    'job_expire_time' => 12,
 
     'databases' => {
 

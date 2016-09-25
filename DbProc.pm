@@ -7,7 +7,9 @@ use threads;
 use DBI;
 # use Redis::JobQueue;
 use RedisDB;
-use JSON qw( encode_json );
+use JSON;
+use POSIX qw( strftime );
+use Time::HiRes qw/time/;
 use Data::Dumper;
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -163,29 +165,26 @@ sub addIssueToQueue {
 
 
     my $params = ();
+    $params->{ 'id' } = sprintf "%d", Time::HiRes::time * 1000000;
     $params->{ 'text' } = $param->{ 'text' };
     $params->{ 'status' } = 'new';
     $params->{ 'email' } = '';
-    $params->{ 'date_created' } = '';
-    $params->{ 'date_sent' } = '';
+    $params->{ 'date_created' } = strftime('%Y-%m-%d %H:%M:%S', localtime);
+    $params->{ 'date_executed' } = '';
     my $data = JSON->new->allow_nonref->encode($params);
 
     eval {
         my $job_queue = RedisDB->new($self->{ 'job_queue' });
-        $job_queue->set($param->{ 'key' }, $data);
-        $job_queue->expire($param->{ 'key' }, 10);
-        undef $job_queue;
+        my $job_exists = $job_queue->get($param->{ 'key' });
+        unless ($job_exists) {
+            $job_queue->set($param->{ 'key' }, $data);
+            $job_queue->expire($param->{ 'key' }, $self->{ 'config' }->{ 'job_expire_time' });
+        }
 
-        # $self->{ 'job_queue' }->set($param->{ 'key' }, $data);
-        # $self->{ 'job_queue' }->expire($param->{ 'key' }, 10);
+        undef $job_queue;
     };
     if ($@) {
-        $self->{ 'logger' }->error('DbProc.pm: Redis: ' . $@);
-        #if ($@ =~ m/Connection refused/ ||
-        #    $@ =~ m/you have replies to fetch/) {
-        #    undef $self->{ 'job_queue' };
-        #    $self->{ 'job_queue' } = RedisDB->new(host => 'localhost', port => 6379);
-        #}
+        $self->{ 'logger' }->error('DbProc.pm: Redis: ' . $@)  if ($self->{ 'logger' });
     }
 
     undef $data;
