@@ -12,6 +12,12 @@ use POSIX qw( strftime );
 use Time::HiRes qw/time/;
 use Data::Dumper;
 
+use constant    BROKEN_JOBS             => 'BROKEN_JOBS';
+use constant    NON_SCHEDULED_JOBS      => 'NON_SCHEDULED_JOBS';
+use constant    WAITING_SESSIONS        => 'WAITING_SESSIONS';
+use constant    BLOCKING_SESSIONS       => 'BLOCKING_SESSIONS';
+use constant    DB_LINKS                => 'DB_LINKS';
+
 # ----------------------------------------------------------------------------------------------------------------------
 
 sub new {
@@ -101,6 +107,7 @@ sub checkBrokenJobs {
 
     if ($issue) {
         $self->addIssueToQueue({
+            'type' => BROKEN_JOBS,
             'key' => $self->{ 'monitor_name' },
             'text' => 'Broken jobs: ' . $job_list,
         });
@@ -134,6 +141,11 @@ sub checkNonScheduledJobs {
     undef $sth;
 
     if ($issue) {
+        $self->addIssueToQueue({
+            'type' => NON_SCHEDULED_JOBS,
+            'key' => $self->{ 'monitor_name' },
+            'text' => 'Broken jobs: ' . $job_list,
+        });
         $self->{ 'logger' }->info($self->{ 'monitor_name' } . '. Non-scheduled jobs: ' . $job_list)
                                                                                                 if $self->{ 'logger' };
     }
@@ -167,6 +179,7 @@ sub addIssueToQueue {
     my $params = ();
     $params->{ 'id' } = sprintf "%d", Time::HiRes::time * 1000000;
     $params->{ 'text' } = $param->{ 'text' };
+    $params->{ 'type' } = $param->{ 'type' };
     $params->{ 'status' } = 'new';
     $params->{ 'email' } = '';
     $params->{ 'date_created' } = strftime('%Y-%m-%d %H:%M:%S', localtime);
@@ -176,7 +189,13 @@ sub addIssueToQueue {
     eval {
         my $job_queue = RedisDB->new($self->{ 'job_queue' });
         my $job_exists = $job_queue->get($param->{ 'key' });
-        unless ($job_exists) {
+        if ($job_exists) {
+            unless ($job_exists->{ 'type' } eq $params->{ 'type' }) {
+                $job_queue->set($param->{ 'key' }, $data);
+                $job_queue->expire($param->{ 'key' }, $self->{ 'config' }->{ 'job_expire_time' });
+            }
+        }
+        else {
             $job_queue->set($param->{ 'key' }, $data);
             $job_queue->expire($param->{ 'key' }, $self->{ 'config' }->{ 'job_expire_time' });
         }
