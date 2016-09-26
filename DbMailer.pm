@@ -3,7 +3,8 @@ package DbMailer;
 use strict;
 use warnings;
 
-use JSON;
+# use JSON;
+use JSON::XS;
 use MIME::Lite;
 use MIME::Base64;
 use Encode qw( _utf8_off );
@@ -49,8 +50,6 @@ sub startProc {
 sub threadProc {
     my ($self) = @_;
 
-    # print Dumper($self);
-
     $self->{ 'job_queue' } = RedisDB->new($self->{ 'job_queue' });
 
     while (1) {
@@ -67,17 +66,17 @@ sub executeJobs {
     my ($self) = @_;
 
     foreach my $job_key (keys %{$self->{ 'config' }->{ 'databases' }}) {
-        # print "---> monitor key = " . $job_key, "\n";
-        # print Dumper($self->{ 'job_queue' });
-        # print Dumper($self->getJob($job_key));
 
         my $job;
         eval {
             my $job_text = $self->getJob($job_key);
             if ($job_text) {
-                $job = JSON->new->allow_nonref->decode($job_text);
+                $self->{ 'logger' }->info('executeJobs: job_text => ' . $job_text)  if ($self->{ 'logger' });
+                $job = JSON::XS->new();
+                $job->allow_nonref(1);
+                $job = $job->decode($job_text);
+
                 if ($job) {
-                    # print "job => " . Dumper($job);
                     $self->execJob($job_key);
                     $self->markJobDone($job_key);
                 }
@@ -105,11 +104,16 @@ sub markJobDone {
 
     my $job;
     eval {
-        $job = JSON->new->allow_nonref->decode($self->getJob($key));
+        $job = JSON::XS->new();
+        $job->allow_nonref(1);
+        $job = $job->decode($self->getJob($key));
+
         if ($job) {
             $job->{ 'status' } = 'done';
             $job->{ 'date_executed' } = strftime('%Y-%m-%d %H:%M:%S', localtime);
-            my $job_text = JSON->new->allow_nonref->encode($job);
+            my $job_text = JSON::XS->new();
+            $job_text->allow_nonref(1);
+            $job_text = $job_text->encode($job);
             $self->{ 'job_queue' }->set($key, $job_text);
             $self->{ 'job_queue' }->expire($key, $self->{ 'config' }->{ 'job_expire_time' });
         }
@@ -128,14 +132,51 @@ sub execJob {
 
     my $job;
     eval {
-        $job = JSON->new->allow_nonref->decode($self->getJob($key));
+        my $job = JSON::XS->new();
+        $job->allow_nonref(1);
+        $job = $job->decode($self->getJob($key));
+
         if ($job) {
-            ;
+            $self->sendEmail($job);
         }
     };
     if ($@) {
         $self->{ 'logger' }->error('DbMailer::execJob: ' . $@)  if ($self->{ 'logger' });
     }
+
+    return;
+}
+
+# ----------------------------------------------------------------------------------------------------------------------
+
+sub sendEmail {
+    my ($self, $job) = @_;
+
+    print "DbMailer::sendEmail::job => ", Dumper($job);
+
+    my $mail_subject = $job->{ 'message_subject' };
+    print "DbMailer::sendEmail::subject = ", $mail_subject, "\n";
+
+    # _utf8_off( $mail_subject );
+    $mail_subject = MIME::Base64::encode_base64( $mail_subject, '' );
+    $mail_subject = "=?UTF-8?B?" . $mail_subject . "?=";
+
+    print "DbMailer::sendEmail::subject (base64) = ", $mail_subject, "\n";
+    print "DbMailer::sendEmail::text = ", $job->{ 'message_text' }, "\n";
+
+    my  $msg = MIME::Lite->new(
+        From     => $self->{ 'config' }->{ 'email_from' },
+        To       => join(',', (@{$self->{ 'config' }->{ 'email_notify_list' }})),
+        Subject  => $mail_subject,
+        Type     => 'multipart/mixed',
+    );
+    $msg->attach(
+        Type => 'text/html; charset=utf-8',
+        Data => $job->{ 'message_text' },
+    );
+    MIME::Lite->send( 'smtp', 'mail.les.loc', Timeout => 60 );
+    $msg->send();
+    undef  $msg;
 
     return;
 }

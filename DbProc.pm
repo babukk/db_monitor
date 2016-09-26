@@ -7,7 +7,7 @@ use threads;
 use DBI;
 # use Redis::JobQueue;
 use RedisDB;
-use JSON;
+use JSON::XS;
 use POSIX qw( strftime );
 use Time::HiRes qw/time/;
 use Data::Dumper;
@@ -109,7 +109,8 @@ sub checkBrokenJobs {
         $self->addIssueToQueue({
             'type' => BROKEN_JOBS,
             'key' => $self->{ 'monitor_name' },
-            'text' => 'Broken jobs: ' . $job_list,
+            'message_subject' => $self->{ 'monitor_name' } . '. Джобы в состоянии BROKEN',
+            'message_text' => 'Broken jobs: ' . $job_list,
         });
         $self->{ 'logger' }->info($self->{ 'monitor_name' } . '. Broken jobs: ' . $job_list)  if $self->{ 'logger' };
     }
@@ -178,21 +179,32 @@ sub addIssueToQueue {
 
     my $params = ();
     $params->{ 'id' } = sprintf "%d", Time::HiRes::time * 1000000;
-    $params->{ 'text' } = $param->{ 'text' };
+    $params->{ 'message_text' } = $param->{ 'message_text' };
     $params->{ 'type' } = $param->{ 'type' };
     $params->{ 'status' } = 'new';
-    $params->{ 'email' } = '';
+    $params->{ 'message_subject' } = $param->{ 'message_subject' };
     $params->{ 'date_created' } = strftime('%Y-%m-%d %H:%M:%S', localtime);
     $params->{ 'date_executed' } = '';
-    my $data = JSON->new->allow_nonref->encode($params);
+
+    my $data = JSON::XS->new();
+    $data->allow_nonref(1);
+    $data = $data->encode($params);
 
     eval {
         my $job_queue = RedisDB->new($self->{ 'job_queue' });
-        my $job_exists = $job_queue->get($param->{ 'key' });
-        if ($job_exists) {
-            unless ($job_exists->{ 'type' } eq $params->{ 'type' }) {
-                $job_queue->set($param->{ 'key' }, $data);
-                $job_queue->expire($param->{ 'key' }, $self->{ 'config' }->{ 'job_expire_time' });
+        my $job_data = $job_queue->get($param->{ 'key' });
+
+        if ($job_data)  {
+            my $job_exists = JSON::XS->new();
+            $job_exists->allow_nonref(1);
+            $job_exists = $job_exists->decode($job_data);
+
+            if ($job_exists->{ 'type' }) {
+
+                unless ($job_exists->{ 'type' } eq $params->{ 'type' }) {
+                    $job_queue->set($param->{ 'key' }, $data);
+                    $job_queue->expire($param->{ 'key' }, $self->{ 'config' }->{ 'job_expire_time' });
+                }
             }
         }
         else {

@@ -9,11 +9,13 @@ use RedisDB;
 use DbConfig;
 use DbMonitor;
 use DbMailer;
-
+# use utf8;
 use Data::Dumper;
 
 my @monitor_pull = ();
 my $conf = $DbConfig::config;
+
+# binmode( STDOUT,':utf8' );
 
 # print  Dumper($conf);
 
@@ -26,7 +28,7 @@ foreach my $conf_key (keys %{$conf->{ 'databases' }}) {
         'db_config'     => $conf->{ 'databases' }->{ $conf_key },
         'monitor_name'  => $conf_key,
         'log_conf_file' => 'etc/log4perl.conf',
-        'job_queue'     => { host => 'localhost', port => 6379, },
+        'job_queue'     => { host => 'localhost', port => 6379, utf8 => 1, },
     });
 
     $monitor_instance->startMonitor;
@@ -37,7 +39,7 @@ my $mailer_proc = DbMailer->new({
         'config'               => $conf,
         'mailer_repeat_period' => $conf->{ 'mailer_repeat_period' },
         'log_conf_file'        => 'etc/log4perl.conf',
-        'job_queue'            => { host => 'localhost', port => 6379, },
+        'job_queue'            => { host => 'localhost', port => 6379, utf8 =>1, },
 });
 
 $mailer_proc->startProc;

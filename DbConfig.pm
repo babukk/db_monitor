@@ -8,14 +8,16 @@ use vars qw( $config );
 $config = {
 
     'email_notify_list' => [
-        'Konstantin_Bakunov@lp.center.rt.ru',
         'Konstantin_Bakunov@center.rt.ru',
+        'Konstantin_Bakunov@lp.center.rt.ru',
     ],
 
     'max_waited_sessions' => 10,
     'max_blocking_sessions' => 5,
-    'mailer_repeat_period' => 15,
-    'job_expire_time' => 12,
+    'mailer_repeat_period' => 15,                               # период запускапроцесса досьавки сообщений на email
+    'job_expire_time' => 12,                                    # 'время жизни' задания в очереди
+    'email_smtp_host' => 'mail.les.loc',                        # SMTP-хост для доставки сообщений
+    'email_from' => 'Konstantin_Bakunov@lp.center.rt.ru',
 
     'databases' => {
 
