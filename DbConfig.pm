@@ -14,9 +14,9 @@ $config = {
 
     'max_waited_sessions' => 10,
     'max_blocking_sessions' => 5,
-    'mailer_repeat_period' => 15,                               # период запускапроцесса досьавки сообщений на email
-    'job_expire_time' => 12,                                    # 'время жизни' задания в очереди
-    'email_smtp_host' => 'mail.les.loc',                        # SMTP-хост для доставки сообщений
+    'mailer_repeat_period' => 15,                           # период запуска процесса доставки сообщений из очереди на email
+    'job_expire_time' => 60 * 5,                            # 'время жизни' задания в очереди
+    'email_smtp_host' => 'mail.les.loc',                    # SMTP-хост для доставки сообщений
     'email_from' => 'Konstantin_Bakunov@lp.center.rt.ru',
 
     'databases' => {
@@ -25,7 +25,7 @@ $config = {
             'db_name' => 'dbi:Oracle:TUDVL',
             'schema' => 'gs3ctk_all',
             'password' => 'devel',
-            'repeat_period' => 10,
+            'repeat_period' => 15,
             'jobs' => [
                 {
                     'job' => 1111111,
@@ -42,14 +42,14 @@ $config = {
             'db_name' => 'dbi:Oracle:TUDVL',
             'schema' => 'gs_api',
             'password' => 'devel',
-            'repeat_period' => 10,
+            'repeat_period' => 15,
         },
 
         'TU_START_CTK@TUDVL' => {
             'db_name' => 'dbi:Oracle:TUDVL',
             'schema' => 'tu_start$_ctk',
             'password' => 'devel',
-            'repeat_period' => 10,
+            'repeat_period' => 15,
             'jobs' => [
                 {
                     'job' => 1111111,

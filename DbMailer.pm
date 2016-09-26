@@ -152,17 +152,11 @@ sub execJob {
 sub sendEmail {
     my ($self, $job) = @_;
 
-    print "DbMailer::sendEmail::job => ", Dumper($job);
-
     my $mail_subject = $job->{ 'message_subject' };
-    print "DbMailer::sendEmail::subject = ", $mail_subject, "\n";
 
     # _utf8_off( $mail_subject );
     $mail_subject = MIME::Base64::encode_base64( $mail_subject, '' );
     $mail_subject = "=?UTF-8?B?" . $mail_subject . "?=";
-
-    print "DbMailer::sendEmail::subject (base64) = ", $mail_subject, "\n";
-    print "DbMailer::sendEmail::text = ", $job->{ 'message_text' }, "\n";
 
     my  $msg = MIME::Lite->new(
         From     => $self->{ 'config' }->{ 'email_from' },
