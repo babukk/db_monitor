@@ -5,7 +5,6 @@ use warnings;
 
 use threads;
 use DBI;
-# use Redis::JobQueue;
 use RedisDB;
 use JSON::XS;
 use POSIX qw( strftime );

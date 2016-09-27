@@ -3,7 +3,6 @@ package DbMailer;
 use strict;
 use warnings;
 
-# use JSON;
 use JSON::XS;
 use MIME::Lite;
 use MIME::Base64;
