@@ -6,7 +6,7 @@ use warnings;
 use JSON::XS;
 use MIME::Lite;
 use MIME::Base64;
-use Encode qw( _utf8_off );
+use Encode qw( _utf8_off _utf8_on encode decode );
 use POSIX qw( strftime );
 # use Data::Dumper;
 
@@ -64,7 +64,9 @@ sub threadProc {
 sub executeJobs {
     my ($self) = @_;
 
-    foreach my $job_key (keys %{$self->{ 'config' }->{ 'databases' }}) {
+    my $all_keys = $self->{ 'job_queue' }->scan_all;
+
+    foreach my $job_key (@{$all_keys}) {
 
         my $job;
         eval {
@@ -75,7 +77,7 @@ sub executeJobs {
                 $job->allow_nonref(1);
                 $job = $job->decode($job_text);
 
-                if ($job) {
+                if (($job) && ($job->{ 'status' } eq 'new')) {
                     $self->execJob($job_key);
                     $self->markJobDone($job_key);
                 }
@@ -152,8 +154,9 @@ sub sendEmail {
     my ($self, $job) = @_;
 
     my $mail_subject = $job->{ 'message_subject' };
+    my $message_text = $job->{ 'message_text' };
+    $message_text = decode( 'utf8', $message_text);
 
-    # _utf8_off( $mail_subject );
     $mail_subject = MIME::Base64::encode_base64( $mail_subject, '' );
     $mail_subject = "=?UTF-8?B?" . $mail_subject . "?=";
 
@@ -165,9 +168,9 @@ sub sendEmail {
     );
     $msg->attach(
         Type => 'text/html; charset=utf-8',
-        Data => $job->{ 'message_text' },
+        Data => $message_text,
     );
-    MIME::Lite->send( 'smtp', 'mail.les.loc', Timeout => 60 );
+    MIME::Lite->send( 'smtp', $self->{ 'config' }->{ 'smtp_host' }, Timeout => 60 );
     $msg->send();
     undef  $msg;
 

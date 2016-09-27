@@ -49,13 +49,9 @@ sub startProc {
 sub threadProc {
     my ($self) = @_;
 
-    # print Dumper($self);
-
     $self->dbConnect;
 
     while (1) {
-        print "thread: " . $self->{ 'monitor_name' } . "\n";
-
         $self->checkBrokenJobs;
         $self->checkNonScheduledJobs;
         $self->checkSessions;
@@ -90,7 +86,6 @@ sub dbConnect {
 sub checkBrokenJobs {
     my ($self) = @_;
 
-    # print Dumper($self);
     my $issue = 0;
 
     my $sth = $self->{ 'dbh' }->prepare( "    SELECT  job  FROM  user_jobs  WHERE  BROKEN = 'Y' " );
@@ -107,7 +102,7 @@ sub checkBrokenJobs {
     if ($issue) {
         $self->addIssueToQueue({
             'type' => BROKEN_JOBS,
-            'key' => $self->{ 'monitor_name' },
+            'key' => $self->{ 'monitor_name' } . ':' . BROKEN_JOBS,
             'message_subject' => $self->{ 'monitor_name' } . '. Джобы в состоянии BROKEN',
             'message_text' => 'Следующие джобы находятся в состоянии BROKEN: ' . $job_list,
         });
@@ -125,7 +120,6 @@ sub checkBrokenJobs {
 sub checkNonScheduledJobs {
     my ($self) = @_;
 
-    # print Dumper($self);
     my $issue = 0;
 
     my $sth = $self->{ 'dbh' }->prepare( "    SELECT  job  FROM  user_jobs  WHERE  next_date < sysdate  AND  this_date
@@ -143,7 +137,7 @@ sub checkNonScheduledJobs {
     if ($issue) {
         $self->addIssueToQueue({
             'type' => NON_SCHEDULED_JOBS,
-            'key' => $self->{ 'monitor_name' },
+            'key' => $self->{ 'monitor_name' } . ':' . NON_SCHEDULED_JOBS,
             'message_subject' => $self->{ 'monitor_name' } . '. Джобы, которые не были запущены по расписанию',
             'message_text' => 'Следующие джобы не были запущены по расписанию: ' . $job_list,
         });
@@ -176,7 +170,6 @@ sub checkSessions {
 sub addIssueToQueue {
     my ($self, $param) = @_;
 
-
     my $params = ();
     $params->{ 'id' } = sprintf "%d", Time::HiRes::time * 1000000;
     $params->{ 'message_text' } = $param->{ 'message_text' };
@@ -194,14 +187,13 @@ sub addIssueToQueue {
         my $job_queue = RedisDB->new($self->{ 'job_queue' });
         my $job_data = $job_queue->get($param->{ 'key' });
 
-        if ($job_data)  {
+        if ($job_data) {
             my $job_exists = JSON::XS->new();
             $job_exists->allow_nonref(1);
             $job_exists = $job_exists->decode($job_data);
 
             if ($job_exists->{ 'type' }) {
-
-                unless ($job_exists->{ 'type' } eq $params->{ 'type' }) {
+                if ($job_exists->{ 'type' } ne $params->{ 'type' }) {
                     $job_queue->set($param->{ 'key' }, $data);
                     $job_queue->expire($param->{ 'key' }, $self->{ 'config' }->{ 'job_expire_time' });
                 }
@@ -213,6 +205,7 @@ sub addIssueToQueue {
         }
 
         undef $job_queue;
+        undef $job_data;
     };
     if ($@) {
         $self->{ 'logger' }->error('DbProc.pm: Redis: ' . $@)  if ($self->{ 'logger' });

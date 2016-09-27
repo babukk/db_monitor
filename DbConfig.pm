@@ -18,6 +18,7 @@ $config = {
     'job_expire_time' => 60 * 5,                            # 'время жизни' задания в очереди
     'email_smtp_host' => 'mail.les.loc',                    # SMTP-хост для доставки сообщений
     'email_from' => 'Konstantin_Bakunov@lp.center.rt.ru',
+    'smtp_host' => 'mail.les.loc',
 
     'databases' => {
 
@@ -68,7 +69,6 @@ $config = {
     },
 
 };
-
 
 1;
 

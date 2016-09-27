@@ -16,7 +16,6 @@ my @monitor_pull = ();
 my $conf = $DbConfig::config;
 
 # binmode( STDOUT,':utf8' );
-
 # print  Dumper($conf);
 
 foreach my $conf_key (keys %{$conf->{ 'databases' }}) {
