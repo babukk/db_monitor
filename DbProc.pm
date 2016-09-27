@@ -88,16 +88,23 @@ sub checkBrokenJobs {
 
     my $issue = 0;
 
-    my $sth = $self->{ 'dbh' }->prepare( "    SELECT  job  FROM  user_jobs  WHERE  BROKEN = 'Y' " );
-    $sth->execute;
+    my $sth;
     my $job_list;
-    while (my (@row) = $sth->fetchrow_array) {
-        $job_list .= ' ';
-        $job_list .= $row[0];
-        $issue ++;
+
+    eval {
+        $sth = $self->{ 'dbh' }->prepare( "    SELECT  job  FROM  user_jobs  WHERE  BROKEN = 'Y' " );
+        $sth->execute;
+        while (my (@row) = $sth->fetchrow_array) {
+            $job_list .= ' ';
+            $job_list .= $row[0];
+            $issue ++;
+        }
+        $sth->finish;
+        undef $sth;
+    };
+    if ($@)  {
+        $self->{ 'logger' }->error('DbProc::checkBrokenJobs. SQL error: ' . $@)  if ($self->{ 'logger' });
     }
-    $sth->finish;
-    undef $sth;
 
     if ($issue) {
         $self->addIssueToQueue({
@@ -122,17 +129,24 @@ sub checkNonScheduledJobs {
 
     my $issue = 0;
 
-    my $sth = $self->{ 'dbh' }->prepare( "    SELECT  job  FROM  user_jobs  WHERE  next_date < sysdate  AND  this_date
-                                                                                   IS NULL " );
-    $sth->execute;
+    my $sth;
     my $job_list;
-    while (my (@row) = $sth->fetchrow_array) {
-        $job_list .= ' ';
-        $job_list .= $row[0];
-        $issue ++;
+
+    eval {
+        $sth = $self->{ 'dbh' }->prepare( "    SELECT  job  FROM  user_jobs  WHERE  next_date < sysdate  AND  this_date
+                                                                                   IS NULL " );
+        $sth->execute;
+        while (my (@row) = $sth->fetchrow_array) {
+            $job_list .= ' ';
+            $job_list .= $row[0];
+            $issue ++;
+        }
+        $sth->finish;
+        undef $sth;
+    };
+    if ($@)  {
+        $self->{ 'logger' }->error('DbProc::checkNonScheduledJobs. SQL error: ' . $@)  if ($self->{ 'logger' });
     }
-    $sth->finish;
-    undef $sth;
 
     if ($issue) {
         $self->addIssueToQueue({
@@ -154,6 +168,28 @@ sub checkDbLinks {
     my ($self) = @_;
 
     return;
+}
+
+# ----------------------------------------------------------------------------------------------------------------------
+
+sub checkDbLink {
+    my ($self, $dblink) = @_;
+
+    my $sth;
+    my $rslt = 0;
+    eval {
+        $sth = $self->{ 'dbh' }->prepare(" SELECT  count(*)  FROM  dual@" . $dblink);
+        $sth->execute;
+        $sth->finish;
+        undef $sth;
+        $rslt = 1;
+    };
+    if ($@)  {
+        $self->{ 'logger' }->error('DbProc::checkDbLink. SQL error: ' . $@)  if ($self->{ 'logger' });
+        $rslt = 0;
+    }
+
+    return $rslt;
 }
 
 # ----------------------------------------------------------------------------------------------------------------------

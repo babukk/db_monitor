@@ -16,9 +16,8 @@ $config = {
     'max_blocking_sessions' => 5,
     'mailer_repeat_period' => 15,                           # период запуска процесса доставки сообщений из очереди на email
     'job_expire_time' => 60 * 5,                            # 'время жизни' задания в очереди
-    'email_smtp_host' => 'mail.les.loc',                    # SMTP-хост для доставки сообщений
+    'smtp_host' => 'mail.les.loc',                    # SMTP-хост для доставки сообщений
     'email_from' => 'Konstantin_Bakunov@lp.center.rt.ru',
-    'smtp_host' => 'mail.les.loc',
 
     'databases' => {
 
