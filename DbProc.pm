@@ -178,13 +178,19 @@ sub checkDbLink {
     my $sth;
     my $rslt = 0;
     eval {
+        local $SIG{ALRM} = sub { die "alarm\n" };
+        alarm $self->{ 'config' }->{ 'db_link_check_timeout' };
         $sth = $self->{ 'dbh' }->prepare(" SELECT  count(*)  FROM  dual@" . $dblink);
         $sth->execute;
         $sth->finish;
         undef $sth;
         $rslt = 1;
+        alarm 0;
     };
     if ($@)  {
+        if ($@ eq "alarm\n") {
+            $self->{ 'logger' }->error('DbProc::checkDbLink. Timeout when checking dblink ' . $dblink)  if ($self->{ 'logger' });
+        }
         $self->{ 'logger' }->error('DbProc::checkDbLink. SQL error: ' . $@)  if ($self->{ 'logger' });
         $rslt = 0;
     }

@@ -14,9 +14,10 @@ $config = {
 
     'max_waited_sessions' => 10,
     'max_blocking_sessions' => 5,
+    'db_link_check_timeout' => 15,                          # timeout для проверки доступности dblink'а
     'mailer_repeat_period' => 15,                           # период запуска процесса доставки сообщений из очереди на email
     'job_expire_time' => 60 * 5,                            # 'время жизни' задания в очереди
-    'smtp_host' => 'mail.les.loc',                    # SMTP-хост для доставки сообщений
+    'smtp_host' => 'mail.les.loc',                          # SMTP-хост для доставки сообщений
     'email_from' => 'Konstantin_Bakunov@lp.center.rt.ru',
 
     'databases' => {
