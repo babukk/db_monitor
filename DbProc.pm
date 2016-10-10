@@ -133,8 +133,9 @@ sub checkNonScheduledJobs {
     my $job_list;
 
     eval {
-        $sth = $self->{ 'dbh' }->prepare( "    SELECT  job  FROM  user_jobs  WHERE  next_date < sysdate  AND  this_date
-                                                                                   IS NULL " );
+        $sth = $self->{ 'dbh' }->prepare( "    SELECT  job  FROM  user_jobs
+                                                  WHERE  next_date < sysdate - 1 / 24 / 60 / 10
+                                                    AND  this_date  IS NULL " );
         $sth->execute;
         while (my (@row) = $sth->fetchrow_array) {
             $job_list .= ' ';
