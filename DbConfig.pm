@@ -9,14 +9,14 @@ $config = {
 
     'email_notify_list' => [
         'Konstantin_Bakunov@center.rt.ru',
-        'Konstantin_Bakunov@lp.center.rt.ru',
+        'Evgeniy_Vasnev@center.rt.ru',
     ],
 
     'max_waited_sessions' => 10,
     'max_blocking_sessions' => 5,
     'db_link_check_timeout' => 15,                          # timeout для проверки доступности dblink'а
     'mailer_repeat_period' => 15,                           # период запуска процесса доставки сообщений из очереди на email
-    'job_expire_time' => 60 * 5,                            # 'время жизни' задания в очереди
+    'job_expire_time' => 60 * 30,                           # 'время жизни' задания в очереди
     'smtp_host' => 'mail.les.loc',                          # SMTP-хост для доставки сообщений
     'email_from' => 'Konstantin_Bakunov@lp.center.rt.ru',
 

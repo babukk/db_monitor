@@ -111,7 +111,7 @@ sub checkBrokenJobs {
             'type' => BROKEN_JOBS,
             'key' => $self->{ 'monitor_name' } . ':' . BROKEN_JOBS,
             'message_subject' => $self->{ 'monitor_name' } . '. Джобы в состоянии BROKEN',
-            'message_text' => 'Следующие джобы находятся в состоянии BROKEN: ' . $job_list,
+            'message_text' => 'Следующие джобы находятся в состоянии BROKEN: <b>' . $job_list . '</b>',
         });
         $self->{ 'logger' }->info($self->{ 'monitor_name' } . '. Broken jobs: ' . $job_list)  if $self->{ 'logger' };
     }
@@ -153,7 +153,7 @@ sub checkNonScheduledJobs {
             'type' => NON_SCHEDULED_JOBS,
             'key' => $self->{ 'monitor_name' } . ':' . NON_SCHEDULED_JOBS,
             'message_subject' => $self->{ 'monitor_name' } . '. Джобы, которые не были запущены по расписанию',
-            'message_text' => 'Следующие джобы не были запущены по расписанию: ' . $job_list,
+            'message_text' => 'Следующие джобы не были запущены по расписанию: <b>' . $job_list . '</b>',
         });
         $self->{ 'logger' }->info($self->{ 'monitor_name' } . '. Non-scheduled jobs: ' . $job_list)
                                                                                                 if $self->{ 'logger' };

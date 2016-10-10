@@ -20,7 +20,7 @@ my $conf = $DbConfig::config;
 
 foreach my $conf_key (keys %{$conf->{ 'databases' }}) {
 
-    print "starting monitor for ", $conf_key, "\n";
+    # print "starting monitor for ", $conf_key, "\n";
 
     my $monitor_instance = DbMonitor->new({
         'config'        => $conf,
