@@ -9,6 +9,7 @@ use RedisDB;
 use JSON::XS;
 use POSIX qw( strftime );
 use Time::HiRes qw/time/;
+use HTML::Template;
 use Data::Dumper;
 
 use constant    BROKEN_JOBS             => 'BROKEN_JOBS';
@@ -95,7 +96,7 @@ sub checkBrokenJobs {
         $sth = $self->{ 'dbh' }->prepare( "    SELECT  job  FROM  user_jobs  WHERE  BROKEN = 'Y' " );
         $sth->execute;
         while (my (@row) = $sth->fetchrow_array) {
-            $job_list .= ' ';
+            $job_list .= ', ';
             $job_list .= $row[0];
             $issue ++;
         }
@@ -110,7 +111,7 @@ sub checkBrokenJobs {
         $self->addIssueToQueue({
             'type' => BROKEN_JOBS,
             'key' => $self->{ 'monitor_name' } . ':' . BROKEN_JOBS,
-            'message_subject' => $self->{ 'monitor_name' } . '. Джобы в состоянии BROKEN',
+            'message_subject' => $self->{ 'monitor_name' } . '. JOBS',
             'message_text' => 'Следующие джобы находятся в состоянии BROKEN: <b>' . $job_list . '</b>',
         });
         $self->{ 'logger' }->info($self->{ 'monitor_name' } . '. Broken jobs: ' . $job_list)  if $self->{ 'logger' };
@@ -138,7 +139,7 @@ sub checkNonScheduledJobs {
                                                     AND  this_date  IS NULL " );
         $sth->execute;
         while (my (@row) = $sth->fetchrow_array) {
-            $job_list .= ' ';
+            $job_list .= ', ';
             $job_list .= $row[0];
             $issue ++;
         }
@@ -153,7 +154,7 @@ sub checkNonScheduledJobs {
         $self->addIssueToQueue({
             'type' => NON_SCHEDULED_JOBS,
             'key' => $self->{ 'monitor_name' } . ':' . NON_SCHEDULED_JOBS,
-            'message_subject' => $self->{ 'monitor_name' } . '. Джобы, которые не были запущены по расписанию',
+            'message_subject' => $self->{ 'monitor_name' } . ' -> JOBS',
             'message_text' => 'Следующие джобы не были запущены по расписанию: <b>' . $job_list . '</b>',
         });
         $self->{ 'logger' }->info($self->{ 'monitor_name' } . '. Non-scheduled jobs: ' . $job_list)
