@@ -70,6 +70,7 @@ sub dbConnect {
 
     eval {
         $ENV{ 'ORACLE_HOME' } = $self->{ 'db_config' }->{ 'ORACLE_HOME' }  if $self->{ 'db_config' }->{ 'ORACLE_HOME' };
+        $ENV{ 'NLS_DATE_FORMAT' } = 'DD.MM.YYYY HH24:MI:SS';
         $self->{ 'dbh' } = DBI->connect($self->{ 'db_config' }->{ 'db_name' }, $self->{ 'db_config' }->{ 'schema' },
                                         $self->{ 'db_config' }->{ 'password' });
     };
@@ -94,11 +95,12 @@ sub checkBrokenJobs {
 
     my $template = HTML::Template->new(filename => $self->{ 'tmpl_path' } . '/broken_jobs.tmpl', die_on_bad_params => 0);
     my @jobs = ();
+    my @job_list = ();
 
     eval {
         $sth = $self->{ 'dbh' }->prepare("
 
-            SELECT  job, sysdate, last_date, failures
+            SELECT  job, to_char( sysdate, 'DD.MM.YYYY HH24:MI:SS' ), to_char( last_date, 'DD.MM.YYYY HH24:MI:SS' ), failures
               FROM  user_jobs
              WHERE  BROKEN = 'N' "
         );
@@ -110,6 +112,7 @@ sub checkBrokenJobs {
             $data{ LAST_DATE } = $last_date;
             $data{ FAILURES } = $failures;
             push(@jobs, \%data);
+            push(@job_list, $job);
         }
         $sth->finish;
         undef $sth;
@@ -126,7 +129,7 @@ sub checkBrokenJobs {
             'message_subject' => $self->{ 'monitor_name' } . ' -> JOBS',
             'message_text' => $template->output,
         });
-        # $self->{ 'logger' }->info($self->{ 'monitor_name' } . '. Broken jobs: ' . $job_list)  if $self->{ 'logger' };
+        $self->{ 'logger' }->info($self->{ 'monitor_name' } . '. Broken jobs: ' . join(', ', @job_list))  if $self->{ 'logger' };
     }
 
     undef $template;
@@ -147,11 +150,12 @@ sub checkNonScheduledJobs {
     my $sth;
     my $template = HTML::Template->new(filename => $self->{ 'tmpl_path' } . '/non_scheduled_jobs.tmpl', die_on_bad_params => 0);
     my @jobs = ();
+    my @job_list = ();
 
     eval {
         $sth = $self->{ 'dbh' }->prepare( "
 
-            SELECT  job, sysdate, last_date, next_date, failures
+            SELECT  job, to_char( sysdate, 'DD.MM.YYYY HH24:MI:SS' ), to_char( last_date, 'DD.MM.YYYY HH24:MI:SS' ), to_char( next_date, 'DD.MM.YYYY HH24:MI:SS' ), failures
               FROM  user_jobs
              WHERE  -- next_date < sysdate - 1 / 24 / 60 / 10
                     next_date < sysdate
@@ -166,6 +170,7 @@ sub checkNonScheduledJobs {
             $data{ NEXT_DATE } = $next_date;
             $data{ FAILURES } = $failures;
             push(@jobs, \%data);
+            push(@job_list, $job);
         }
         $sth->finish;
         undef $sth;
@@ -180,9 +185,9 @@ sub checkNonScheduledJobs {
             'type' => NON_SCHEDULED_JOBS,
             'key' => $self->{ 'monitor_name' } . ':' . NON_SCHEDULED_JOBS,
             'message_subject' => $self->{ 'monitor_name' } . ' -> JOBS',
-            'message_text' => 'Следующие джобы не были запущены по расписанию: <b>' . $job_list . '</b>',
+            'message_text' => $template->output,
         });
-        $self->{ 'logger' }->info($self->{ 'monitor_name' } . '. Non-scheduled jobs: ' . $job_list)  if $self->{ 'logger' };
+        $self->{ 'logger' }->info($self->{ 'monitor_name' } . '. Non-scheduled jobs: ' . join(', ', @job_list))  if $self->{ 'logger' };
     }
 
     return;

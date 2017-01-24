@@ -171,7 +171,7 @@ sub sendEmail {
         Data => $message_text,
     );
     MIME::Lite->send( 'smtp', $self->{ 'config' }->{ 'smtp_host' }, Timeout => 60 );
-    $self->{ 'logger' }->info('DbMailer::sendemail: ' . $job->{ 'mail_subject' } . '; ' . $message_text)  if ($self->{ 'logger' });
+    # $self->{ 'logger' }->info('DbMailer::sendemail: ' . $job->{ 'mail_subject' } . '; ' . $message_text)  if ($self->{ 'logger' });
     $msg->send();
     undef  $msg;
 

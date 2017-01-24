@@ -1,20 +1,20 @@
 
 Следующие джобы находятся в состоянии BROKEN:
-
+<br />
 <table width="80%" border="1" cellspacing="0">
     <tr>
-        <th>job</th>
-        <th>sysdate</th>
-        <th>las_date</th>
-        <th>failures</th>
+        <th align="center">job</th>
+        <th align="center">sysdate</th>
+        <th align="center">last_date</th>
+        <th align="center">failures</th>
     </tr>
 
     <TMPL_LOOP JOB_LIST>
     <tr>
-        <td><TMPL_VAR NAME=JOB></td>
-        <td><TMPL_VAR NAME=SYSDATE></td>
-        <td><TMPL_VAR NAME=LAST_DATE></td>
-        <td><TMPL_VAR NAME=FAILURES></td>
+        <td align="right"><TMPL_VAR NAME=JOB></td>
+        <td align="right"><TMPL_VAR NAME=SYSDATE></td>
+        <td align="right"><TMPL_VAR NAME=LAST_DATE></td>
+        <td align="right"><TMPL_VAR NAME=FAILURES></td>
     </tr>
     </TMPL_LOOP>
 </table>
