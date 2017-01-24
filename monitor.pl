@@ -25,6 +25,7 @@ foreach my $conf_key (keys %{$conf->{ 'databases' }}) {
     my $monitor_instance = DbMonitor->new({
         'config'        => $conf,
         'db_config'     => $conf->{ 'databases' }->{ $conf_key },
+        'tmpl_path'     => $conf->{ 'tmpl_path' },
         'monitor_name'  => $conf_key,
         'log_conf_file' => 'etc/log4perl.conf',
         'job_queue'     => { host => 'localhost', port => 6379, utf8 => 1, },

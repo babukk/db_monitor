@@ -19,12 +19,14 @@ $config = {
     'job_expire_time' => 60 * 30,                           # 'время жизни' задания в очереди
     'smtp_host' => 'mail.les.loc',                          # SMTP-хост для доставки сообщений
     'email_from' => 'Konstantin_Bakunov@lp.center.rt.ru',
+    'tmpl_path' => './tmpl',
 
     'databases' => {
 
         'GS3CTK_ALL@TU' => {
             'db_name' => 'dbi:Oracle:TU',
             'schema' => 'gs3ctk_all',
+            'ORACLE_HOME' => '/usr/lib/oracle/11.2/client64',
             'password' => 'ctk',
             'repeat_period' => 15,
             'jobs' => [
@@ -71,6 +73,7 @@ $config = {
         'GS_API@TU' => {
             'db_name' => 'dbi:Oracle:TU',
             'schema' => 'gs_api',
+            'ORACLE_HOME' => '/usr/lib/oracle/11.2/client64',
             'password' => 'gsapi',
             'repeat_period' => 15,
         },
@@ -78,6 +81,7 @@ $config = {
         'TU_START_CTK@TU' => {
             'db_name' => 'dbi:Oracle:TU',
             'schema' => 'tu_start$_ctk',
+            'ORACLE_HOME' => '/usr/lib/oracle/11.2/client64',
             'password' => 'tu_start',
             'repeat_period' => 15,
             'jobs' => [
@@ -141,9 +145,17 @@ $config = {
 6.       Недоступность dblink АСР Старт филиала из схемы tu_start$_ctk
 
 
-select  jr.SID, jr.FAILURES, jr.LAST_DATE, jl.date_beg, jr.JOB, jl.name_proc,  jj.what  from  dba_jobs_running  jr  join user_jobs jj  on  jj.JOB = jr.JOB
-join  lks_job_log  jl  on  jj.what  like  '%' || jl.name_proc || '%'
-and  jl.date_end is null
+  select  jr.SID, jr.FAILURES, jr.LAST_DATE, jl.date_beg, jr.JOB, jl.name_proc, jj.what
+    from  dba_jobs_running  jr  join user_jobs jj  on  jj.JOB = jr.JOB
+    join  lks_job_log  jl  on  jj.what  like  '%' || jl.name_proc || '%'
+     and  jl.date_end is null
+
+
+
+1.       Сократить заголовок письма до шаблона «СХЕМА@БД -> НАЗВАНИЕ_ОБЪЕКТА_НАБЛЮДЕНИЯ»
+             Где НАЗВАНИЕ_ОБЪЕКТА_НАБЛЮДЕНИЯ = (JOBS, DB_LINK, SESSION и т.п.)
+2.       Для события BROKEN в письме писать для каждого джоба (таблицей): id, SYSDATE, LAST_DATE, FAILURES
+3.       Для события «не запущен» в письме писать: id, SYSDATE, LAST_DATE, NEXT_DATE, FAILURES
 
 
 =cut

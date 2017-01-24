@@ -30,6 +30,7 @@ sub new {
 
     $self->{ 'db_proc' } = DbProc->new({
         'config'        => $self->{ 'config' },
+        'tmpl_path'     => $self->{ 'tmpl_path' },
         'db_config'     => $self->{ 'db_config' },
         'monitor_name'  => $self->{ 'monitor_name' },
         'repeat_period' => $self->{ 'db_config' }->{ 'repeat_period' },

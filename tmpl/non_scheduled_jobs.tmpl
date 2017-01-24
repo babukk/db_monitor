@@ -1,0 +1,20 @@
+
+Следующие джобы не были запущены по расписанию:
+
+<table width="80%" border="1" cellspacing="0">
+    <tr>
+        <th>job</th>
+        <th>sysdate</th>
+        <th>las_date</th>
+        <th>failures</th>
+    </tr>
+
+    <TMPL_LOOP JOB_LIST>
+    <tr>
+        <td><TMPL_VAR NAME=JOB></td>
+        <td><TMPL_VAR NAME=SYSDATE></td>
+        <td><TMPL_VAR NAME=LAST_DATE></td>
+        <td><TMPL_VAR NAME=FAILURES></td>
+    </tr>
+    </TMPL_LOOP>
+</table>

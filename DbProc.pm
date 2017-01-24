@@ -18,7 +18,7 @@ use constant    WAITING_SESSIONS        => 'WAITING_SESSIONS';
 use constant    BLOCKING_SESSIONS       => 'BLOCKING_SESSIONS';
 use constant    DB_LINKS                => 'DB_LINKS';
 
-# ----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
 
 sub new {
     my ($class, $params) = @_;
@@ -34,7 +34,7 @@ sub new {
     return $self;
 }
 
-# ----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
 
 sub startProc {
     my ($self) = @_;
@@ -45,7 +45,7 @@ sub startProc {
     return;
 }
 
-# ----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
 
 sub threadProc {
     my ($self) = @_;
@@ -63,12 +63,13 @@ sub threadProc {
     return;
 }
 
-# ----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
 
 sub dbConnect {
     my ($self) = @_;
 
     eval {
+        $ENV{ 'ORACLE_HOME' } = $self->{ 'db_config' }->{ 'ORACLE_HOME' }  if $self->{ 'db_config' }->{ 'ORACLE_HOME' };
         $self->{ 'dbh' } = DBI->connect($self->{ 'db_config' }->{ 'db_name' }, $self->{ 'db_config' }->{ 'schema' },
                                         $self->{ 'db_config' }->{ 'password' });
     };
@@ -79,26 +80,36 @@ sub dbConnect {
     return;
 }
 
-# ----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
 # checkBrokenJobs()
-# Описание: Джоб в статусе BROKEN
-# ----------------------------------------------------------------------------------------------------------------------
+# Описание: Джобы в статусе BROKEN
+# -----------------------------------------------------------------------------------------------------------------------
 
 sub checkBrokenJobs {
     my ($self) = @_;
 
-    my $issue = 0;
-
     my $sth;
-    my $job_list;
+
+    # print "path = " . $self->{ 'tmpl_path' }, "\n";
+
+    my $template = HTML::Template->new(filename => $self->{ 'tmpl_path' } . '/broken_jobs.tmpl', die_on_bad_params => 0);
+    my @jobs = ();
 
     eval {
-        $sth = $self->{ 'dbh' }->prepare( "    SELECT  job  FROM  user_jobs  WHERE  BROKEN = 'Y' " );
+        $sth = $self->{ 'dbh' }->prepare("
+
+            SELECT  job, sysdate, last_date, failures
+              FROM  user_jobs
+             WHERE  BROKEN = 'N' "
+        );
         $sth->execute;
-        while (my (@row) = $sth->fetchrow_array) {
-            $job_list .= ', ';
-            $job_list .= $row[0];
-            $issue ++;
+        while (my ($job, $sysdate, $last_date, $failures) = $sth->fetchrow_array) {
+            my %data = ();
+            $data{ JOB } = $job;
+            $data{ SYSDATE } = $sysdate;
+            $data{ LAST_DATE } = $last_date;
+            $data{ FAILURES } = $failures;
+            push(@jobs, \%data);
         }
         $sth->finish;
         undef $sth;
@@ -107,15 +118,18 @@ sub checkBrokenJobs {
         $self->{ 'logger' }->error('DbProc::checkBrokenJobs. SQL error: ' . $@)  if ($self->{ 'logger' });
     }
 
-    if ($issue) {
+    if (@jobs) {
+        $template->param({ JOB_LIST => \@jobs, });
         $self->addIssueToQueue({
             'type' => BROKEN_JOBS,
             'key' => $self->{ 'monitor_name' } . ':' . BROKEN_JOBS,
-            'message_subject' => $self->{ 'monitor_name' } . '. JOBS',
-            'message_text' => 'Следующие джобы находятся в состоянии BROKEN: <b>' . $job_list . '</b>',
+            'message_subject' => $self->{ 'monitor_name' } . ' -> JOBS',
+            'message_text' => $template->output,
         });
-        $self->{ 'logger' }->info($self->{ 'monitor_name' } . '. Broken jobs: ' . $job_list)  if $self->{ 'logger' };
+        # $self->{ 'logger' }->info($self->{ 'monitor_name' } . '. Broken jobs: ' . $job_list)  if $self->{ 'logger' };
     }
+
+    undef $template;
 
     return;
 }
@@ -131,17 +145,27 @@ sub checkNonScheduledJobs {
     my $issue = 0;
 
     my $sth;
-    my $job_list;
+    my $template = HTML::Template->new(filename => $self->{ 'tmpl_path' } . '/non_scheduled_jobs.tmpl', die_on_bad_params => 0);
+    my @jobs = ();
 
     eval {
-        $sth = $self->{ 'dbh' }->prepare( "    SELECT  job  FROM  user_jobs
-                                                  WHERE  next_date < sysdate - 1 / 24 / 60 / 10
-                                                    AND  this_date  IS NULL " );
+        $sth = $self->{ 'dbh' }->prepare( "
+
+            SELECT  job, sysdate, last_date, next_date, failures
+              FROM  user_jobs
+             WHERE  -- next_date < sysdate - 1 / 24 / 60 / 10
+                    next_date < sysdate
+               AND  this_date  IS NULL "
+        );
         $sth->execute;
-        while (my (@row) = $sth->fetchrow_array) {
-            $job_list .= ', ';
-            $job_list .= $row[0];
-            $issue ++;
+        while (my ($job, $sysdate, $last_date, $next_date, $failures) = $sth->fetchrow_array) {
+            my %data = ();
+            $data{ JOB } = $job;
+            $data{ SYSDATE } = $sysdate;
+            $data{ LAST_DATE } = $last_date;
+            $data{ NEXT_DATE } = $next_date;
+            $data{ FAILURES } = $failures;
+            push(@jobs, \%data);
         }
         $sth->finish;
         undef $sth;
@@ -151,20 +175,20 @@ sub checkNonScheduledJobs {
     }
 
     if ($issue) {
+        $template->param({ JOB_LIST => \@jobs, });
         $self->addIssueToQueue({
             'type' => NON_SCHEDULED_JOBS,
             'key' => $self->{ 'monitor_name' } . ':' . NON_SCHEDULED_JOBS,
             'message_subject' => $self->{ 'monitor_name' } . ' -> JOBS',
             'message_text' => 'Следующие джобы не были запущены по расписанию: <b>' . $job_list . '</b>',
         });
-        $self->{ 'logger' }->info($self->{ 'monitor_name' } . '. Non-scheduled jobs: ' . $job_list)
-                                                                                                if $self->{ 'logger' };
+        $self->{ 'logger' }->info($self->{ 'monitor_name' } . '. Non-scheduled jobs: ' . $job_list)  if $self->{ 'logger' };
     }
 
     return;
 }
 
-# ----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
 
 sub checkDbLinks {
     my ($self) = @_;
@@ -172,7 +196,7 @@ sub checkDbLinks {
     return;
 }
 
-# ----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
 
 sub checkDbLink {
     my ($self, $dblink) = @_;
@@ -200,7 +224,7 @@ sub checkDbLink {
     return $rslt;
 }
 
-# ----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
 
 sub checkSessions {
     my ($self) = @_;
@@ -209,7 +233,7 @@ sub checkSessions {
     return;
 }
 
-# ----------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------
 
 sub addIssueToQueue {
     my ($self, $param) = @_;
